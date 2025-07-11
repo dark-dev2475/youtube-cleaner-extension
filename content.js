@@ -22,61 +22,151 @@
     }
     
     function blockYouTubeShorts() {
+        console.log('YouTube Shorts Blocker: Starting blocking...');
+        
         // Function to block YouTube Shorts
         function blockShorts() {
-            // Block Shorts from navigation
+            // 1. Block Shorts navigation links
             const shortsLinks = document.querySelectorAll('a[href="/shorts"], a[href*="/shorts/"]');
             shortsLinks.forEach(link => {
                 link.style.display = 'none';
+                link.style.visibility = 'hidden';
             });
             
-            // Block Shorts videos in feed
-            const shortsVideos = document.querySelectorAll('a[href*="/shorts/"]');
-            shortsVideos.forEach(video => {
-                const container = video.closest('ytd-rich-item-renderer, ytd-video-renderer, ytd-compact-video-renderer');
-                if (container) {
-                    container.style.display = 'none';
-                }
+            // 2. Block Shorts videos in feed with multiple selectors
+            const shortsSelectors = [
+                'a[href*="/shorts/"]',
+                'ytd-rich-item-renderer a[href*="/shorts/"]',
+                'ytd-video-renderer a[href*="/shorts/"]',
+                'ytd-compact-video-renderer a[href*="/shorts/"]',
+                'ytd-grid-video-renderer a[href*="/shorts/"]',
+                'ytd-rich-grid-media a[href*="/shorts/"]'
+            ];
+            
+            shortsSelectors.forEach(selector => {
+                const elements = document.querySelectorAll(selector);
+                elements.forEach(element => {
+                    const container = element.closest('ytd-rich-item-renderer, ytd-video-renderer, ytd-compact-video-renderer, ytd-grid-video-renderer, ytd-rich-grid-media');
+                    if (container) {
+                        container.style.display = 'none';
+                        container.style.visibility = 'hidden';
+                    }
+                });
             });
             
-            // Block Shorts shelf
-            const shortsShelf = document.querySelector('ytd-reel-shelf-renderer');
-            if (shortsShelf) {
-                shortsShelf.style.display = 'none';
-            }
+            // 3. Block Shorts shelf/reel shelf
+            const shortsShelves = document.querySelectorAll('ytd-reel-shelf-renderer, ytd-rich-section-renderer[is-shorts]');
+            shortsShelves.forEach(shelf => {
+                shelf.style.display = 'none';
+                shelf.style.visibility = 'hidden';
+            });
             
-            // Block Shorts button in sidebar
-            const shortsButton = document.querySelector('a[href="/shorts"]');
-            if (shortsButton) {
-                const listItem = shortsButton.closest('ytd-guide-entry-renderer');
+            // 4. Block Shorts button in sidebar
+            const shortsButtons = document.querySelectorAll('a[href="/shorts"], ytd-guide-entry-renderer a[href="/shorts"]');
+            shortsButtons.forEach(button => {
+                const listItem = button.closest('ytd-guide-entry-renderer');
                 if (listItem) {
                     listItem.style.display = 'none';
-                }
-            }
-            
-            // Redirect from Shorts pages
-            if (window.location.pathname.includes('/shorts/')) {
-                window.location.href = 'https://www.youtube.com/';
-            }
-        }
-        
-        // Run immediately
-        blockShorts();
-        
-        // Set up observer for dynamic content
-        const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                if (mutation.type === 'childList') {
-                    blockShorts();
+                    listItem.style.visibility = 'hidden';
                 }
             });
+            
+            // 5. Block Shorts in search results
+            const searchResults = document.querySelectorAll('ytd-video-renderer, ytd-rich-item-renderer');
+            searchResults.forEach(result => {
+                const link = result.querySelector('a[href*="/shorts/"]');
+                if (link) {
+                    result.style.display = 'none';
+                    result.style.visibility = 'hidden';
+                }
+            });
+            
+            // 6. Block Shorts in channel pages
+            const channelVideos = document.querySelectorAll('ytd-grid-video-renderer, ytd-rich-item-renderer');
+            channelVideos.forEach(video => {
+                const link = video.querySelector('a[href*="/shorts/"]');
+                if (link) {
+                    video.style.display = 'none';
+                    video.style.visibility = 'hidden';
+                }
+            });
+            
+            // 7. Block Shorts in recommendations
+            const recommendations = document.querySelectorAll('ytd-rich-item-renderer');
+            recommendations.forEach(item => {
+                const link = item.querySelector('a[href*="/shorts/"]');
+                if (link) {
+                    item.style.display = 'none';
+                    item.style.visibility = 'hidden';
+                }
+            });
+            
+            // 8. Block Shorts in trending
+            const trendingItems = document.querySelectorAll('ytd-rich-grid-media');
+            trendingItems.forEach(item => {
+                const link = item.querySelector('a[href*="/shorts/"]');
+                if (link) {
+                    item.style.display = 'none';
+                    item.style.visibility = 'hidden';
+                }
+            });
+            
+            // 9. Block Shorts in homepage feed
+            const homeFeedItems = document.querySelectorAll('ytd-rich-item-renderer');
+            homeFeedItems.forEach(item => {
+                const link = item.querySelector('a[href*="/shorts/"]');
+                if (link) {
+                    item.style.display = 'none';
+                    item.style.visibility = 'hidden';
+                }
+            });
+            
+            // 10. Block Shorts in mobile view
+            const mobileItems = document.querySelectorAll('ytd-rich-grid-row');
+            mobileItems.forEach(row => {
+                const shortsInRow = row.querySelectorAll('a[href*="/shorts/"]');
+                if (shortsInRow.length > 0) {
+                    row.style.display = 'none';
+                    row.style.visibility = 'hidden';
+                }
+            });
+        }
+        
+        // Redirect from Shorts pages immediately
+        if (window.location.pathname.includes('/shorts/')) {
+            console.log('YouTube Shorts Blocker: Redirecting from Shorts page...');
+            window.location.href = 'https://www.youtube.com/';
+            return;
+        }
+        
+        // Run blocking immediately
+        blockShorts();
+        
+        // Set up observer for dynamic content with debouncing
+        let timeout;
+        const observer = new MutationObserver(function(mutations) {
+            clearTimeout(timeout);
+            timeout = setTimeout(function() {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                        blockShorts();
+                    }
+                });
+            }, 100);
         });
         
-        // Start observing
+        // Start observing with more specific options
         observer.observe(document.body, {
             childList: true,
-            subtree: true
+            subtree: true,
+            attributes: false,
+            characterData: false
         });
+        
+        // Also run blocking periodically to catch any missed content
+        setInterval(blockShorts, 2000);
+        
+        console.log('YouTube Shorts Blocker: Blocking active');
     }
     
     function blockInstagramFeed() {
